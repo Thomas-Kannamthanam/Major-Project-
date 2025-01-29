@@ -1,133 +1,101 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'models/user.dart';
+import 'services/user_service.dart';
 
 void main() {
-  runApp(const ParkItApp());
+  runApp(const MyApp());
 }
 
-class ParkItApp extends StatelessWidget {
-  const ParkItApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ParkIt',
+      title: 'User Manager',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const HomePage(),
+      home: const UserPage(),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class UserPage extends StatefulWidget {
+  const UserPage({super.key});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _UserPageState createState() => _UserPageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  final List<String> imgList = [
-    'assets/images/image1.png',
-    'assets/images/image2.png',
-    'assets/images/image3.png',
-  ];
+class _UserPageState extends State<UserPage> {
+  final UserService _userService = UserService();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
+  User? _currentUser;
 
-  // This would be your user count, for demo purposes it's set to 150
-  final int userCount = 150;
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  void _loadUser() async {
+    User? user = await _userService.getUser();
+    if (user != null) {
+      setState(() {
+        _currentUser = user;
+        _nameController.text = user.name;
+        _phoneNumberController.text = user.phoneNumber;
+      });
+    }
+  }
+
+  void _saveUser() {
+    String name = _nameController.text;
+    String phoneNumber = _phoneNumberController.text;
+
+    if (name.isNotEmpty && phoneNumber.isNotEmpty) {
+      User user = User(name: name, phoneNumber: phoneNumber);
+      _userService.saveUser(user);
+      setState(() {
+        _currentUser = user;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ParkIt'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              // Handle notification icon press
-            },
-          ),
-          PopupMenuButton<String>(
-            onSelected: (String result) {
-              // Handle menu option selection
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'new_user',
-                child: Text('New User'),
-              ),
-              const PopupMenuItem<String>(
-                value: 'active_users',
-                child: Text('Active Users'),
-              ),
-              const PopupMenuItem<String>(
-                value: 'alerts',
-                child: Text('Alerts'),
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () {
-              // Handle home icon press
-            },
-          ),
-        ],
+        title: const Text('User Manager'),
       ),
-      body: Stack(
-        children: [
-          // Full-Screen Background Slideshow using carousel_slider
-          Positioned.fill(
-            child: CarouselSlider(
-              options: CarouselOptions(
-                autoPlay: true,
-                aspectRatio: 9 / 16, // Aspect ratio for portrait mode
-                enlargeCenterPage: false,
-                viewportFraction: 1.0,
-                autoPlayInterval: const Duration(seconds: 3),
-              ),
-              items: imgList.map((item) => Image.asset(
-                item,
-                fit: BoxFit.cover, // Ensures the image covers the entire screen
-                width: double.infinity,
-                height: double.infinity,
-              )).toList(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
             ),
-          ),
-          // Centered User Count
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Total Users',
-                    style: TextStyle(
-                      fontSize: 24,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '$userCount',
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
+            TextField(
+              controller: _phoneNumberController,
+              decoration: const InputDecoration(labelText: 'Phone Number'),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _saveUser,
+              child: const Text('Save User'),
+            ),
+            const SizedBox(height: 20),
+            if (_currentUser != null)
+              Text(
+                'Saved User: ${_currentUser!.name}, ${_currentUser!.phoneNumber}',
+                style: const TextStyle(fontSize: 16),
+              ),
+          ],
+        ),
       ),
     );
   }
